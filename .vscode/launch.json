@@ -5,7 +5,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch",
+      "name": "Launch Rust Project",
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceRoot}/target/debug/driver.exe",
@@ -15,6 +15,18 @@
       "environment": [],
       "console": "integratedTerminal",
       "preLaunchTask": "rust: cargo build"
-    }
+    },
+    {
+      "name": "Launch Client",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/js/client",
+      "runtimeExecutable": "${workspaceFolder}/js/client/node_modules/.bin/electron-forge-vscode-nix",
+      "windows": {
+        "runtimeExecutable": "${workspaceFolder}/js/client/node_modules/.bin/electron-forge-vscode-win.cmd",
+      },
+      "args": [],
+      "console": "integratedTerminal"
+    },
   ]
 }
