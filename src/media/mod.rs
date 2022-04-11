@@ -1,16 +1,23 @@
 use futures::executor::block_on;
 
+use serde::Serialize;
 use windows::Media::Control::{
     GlobalSystemMediaTransportControlsSession as MediaSession,
     GlobalSystemMediaTransportControlsSessionManager as MediaManager,
 };
 
+#[derive(Serialize)]
 struct MusicInfo {
-    title: windows::core::HSTRING,
-    artist: windows::core::HSTRING,
-    album_title: windows::core::HSTRING,
-    finished_percentage: windows::core::HSTRING,
-    status: windows::core::HSTRING,
+    // title: windows::core::HSTRING,
+    // artist: windows::core::HSTRING,
+    // album_title: windows::core::HSTRING,
+    // finished_percentage: windows::core::HSTRING,
+    // status: windows::core::HSTRING,
+    title: String,
+    artist: String,
+    album_title: String,
+    finished_percentage: String,
+    status: String,
 }
 
 impl MusicInfo {
@@ -23,24 +30,12 @@ impl MusicInfo {
         status: windows::core::HSTRING,
     ) -> Self {
         Self {
-            title,
-            artist,
-            album_title,
-            finished_percentage,
-            status,
+            title: title.to_string(),
+            artist: artist.to_string(),
+            album_title: album_title.to_string(),
+            finished_percentage: finished_percentage.to_string(),
+            status: status.to_string(),
         }
-    }
-}
-
-impl std::fmt::Display for MusicInfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{ \"{}\": \"{}\", \"{}\": \"{}\", \"{}\": \"{}\", \"{}\": \"{}\", \"{}\": \"{}\" }}",
-            "title", self.title,
-            "artist", self.artist,
-            "album_title", self.album_title,
-            "finished_percentage", self.finished_percentage,
-            "status", self.status
-        )
     }
 }
 
@@ -142,7 +137,7 @@ pub fn pause(session: MediaSession) {
 /// Returns raw currently playing of the given session
 pub fn currently_playing_raw(session: MediaSession) -> String {
     let music_info = get_music_info(session);
-    format!("{}", music_info)
+    format!("{}", serde_json::to_string(&music_info).unwrap())
 }
 
 /// Get formated currently playing info (printed out in console)
