@@ -4,39 +4,16 @@ use serde::Serialize;
 use windows::Media::Control::{
     GlobalSystemMediaTransportControlsSession as MediaSession,
     GlobalSystemMediaTransportControlsSessionManager as MediaManager,
+    GlobalSystemMediaTransportControlsSessionPlaybackStatus,
 };
 
 #[derive(Serialize)]
 struct MusicInfo {
-    // title: windows::core::HSTRING,
-    // artist: windows::core::HSTRING,
-    // album_title: windows::core::HSTRING,
-    // finished_percentage: windows::core::HSTRING,
-    // status: windows::core::HSTRING,
     title: String,
     artist: String,
     album_title: String,
     finished_percentage: String,
     status: String,
-}
-
-impl MusicInfo {
-    #[must_use]
-    fn new(
-        title: windows::core::HSTRING,
-        artist: windows::core::HSTRING,
-        album_title: windows::core::HSTRING,
-        finished_percentage: windows::core::HSTRING,
-        status: windows::core::HSTRING,
-    ) -> Self {
-        Self {
-            title: title.to_string(),
-            artist: artist.to_string(),
-            album_title: album_title.to_string(),
-            finished_percentage: finished_percentage.to_string(),
-            status: status.to_string(),
-        }
-    }
 }
 
 /// Gets the current media session. This value will be used in most other function
@@ -68,36 +45,25 @@ fn get_music_info(session: MediaSession) -> MusicInfo {
         .GetPlaybackInfo()
         .unwrap()
         .PlaybackStatus()
-        .unwrap()
-        .0;
-
-    // Possible retured status values
-    // from windows::Media::Control::GlobalSystemMediaTransportControlsSessionPlaybackStatus
-
-    // Closed: 0
-    // Opened: 1
-    // Changing: 2
-    // Stopped: 3
-    // Playing: 4
-    // Paused: 5
+        .unwrap();
 
     let status_string: String = match status {
-        0 => "CLOSED".to_string(),
-        1 => "OPENED".to_string(),
-        2 => "CHANGING".to_string(),
-        3 => "STOPPED".to_string(),
-        4 => "PLAYING".to_string(),
-        5 => "PAUSED".to_string(),
-        _ => "UNKNOWN".to_string(), // Default case should be unreachable
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus::Closed => "CLOSED".to_string(),
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus::Opened => "OPENED".to_string(),
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus::Changing => "CHANGING".to_string(),
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus::Stopped => "STOPPED".to_string(),
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing => "PLAYING".to_string(),
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus::Paused => "PAUSED".to_string(),
+        _ => unreachable!(), // Default case should be unreachable
     };
 
-    MusicInfo::new(
-        title,
-        artist,
-        album_title,
-        windows::core::HSTRING::from(finished_percentage.to_string()),
-        windows::core::HSTRING::from(status_string.to_string())
-    )
+    MusicInfo {
+        title: title.to_string(),
+        artist: artist.to_string(),
+        album_title: album_title.to_string(),
+        finished_percentage: finished_percentage.to_string(),
+        status: status_string.to_string(),
+    }
 }
 
 /// Needed make sure that the command is fully processed before exiting
