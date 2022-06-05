@@ -26,6 +26,7 @@ fn main() {
         "pa" => media::pause(current_session),
         "nt" => media::next_track(current_session),
         "pt" => media::previous_track(current_session),
+        "wc" => media::Manager::new().start_sync(),
         _ => println!(
             "\
             cp\tCurrently Playing\n\

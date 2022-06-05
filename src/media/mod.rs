@@ -1,11 +1,14 @@
 use futures::executor::block_on;
 
 use serde::Serialize;
+
 use windows::Media::Control::{
-    GlobalSystemMediaTransportControlsSession as MediaSession,
-    GlobalSystemMediaTransportControlsSessionManager as MediaManager,
+    GlobalSystemMediaTransportControlsSession, GlobalSystemMediaTransportControlsSessionManager,
     GlobalSystemMediaTransportControlsSessionPlaybackStatus,
 };
+
+mod manager;
+pub use manager::*;
 
 #[derive(Serialize)]
 struct MusicInfo {
@@ -17,8 +20,8 @@ struct MusicInfo {
 }
 
 /// Gets the current media session. This value will be used in most other function
-pub fn get_current_session() -> Result<MediaSession, &'static str> {
-    let sessions = MediaManager::RequestAsync();
+pub fn get_current_session() -> Result<GlobalSystemMediaTransportControlsSession, &'static str> {
+    let sessions = GlobalSystemMediaTransportControlsSessionManager::RequestAsync();
     let sessions_results = block_on(sessions.unwrap()).unwrap();
 
     if sessions_results.GetCurrentSession().is_err() {
@@ -29,7 +32,7 @@ pub fn get_current_session() -> Result<MediaSession, &'static str> {
 }
 
 /// Gets a hashmap containing information of currently playing music/media
-fn get_music_info(session: MediaSession) -> MusicInfo {
+fn get_music_info(session: GlobalSystemMediaTransportControlsSession) -> MusicInfo {
     let media_properties = block_on(session.TryGetMediaPropertiesAsync().unwrap()).unwrap();
     let title = media_properties.Title().unwrap();
     let artist = media_properties.Artist().unwrap();
@@ -41,13 +44,21 @@ fn get_music_info(session: MediaSession) -> MusicInfo {
         * 100.0)
         .round() as u8;
 
-    let status = session
-        .GetPlaybackInfo()
-        .unwrap()
-        .PlaybackStatus()
-        .unwrap();
+    let status = session.GetPlaybackInfo().unwrap().PlaybackStatus().unwrap();
 
-    let status_string: String = match status {
+    let status_string = playback_status_string(status);
+
+    MusicInfo {
+        title: title.to_string(),
+        artist: artist.to_string(),
+        album_title: album_title.to_string(),
+        finished_percentage: finished_percentage.to_string(),
+        status: status_string,
+    }
+}
+
+fn playback_status_string(status: GlobalSystemMediaTransportControlsSessionPlaybackStatus) -> String {
+    match status {
         GlobalSystemMediaTransportControlsSessionPlaybackStatus::Closed => "CLOSED".to_string(),
         GlobalSystemMediaTransportControlsSessionPlaybackStatus::Opened => "OPENED".to_string(),
         GlobalSystemMediaTransportControlsSessionPlaybackStatus::Changing => "CHANGING".to_string(),
@@ -55,14 +66,6 @@ fn get_music_info(session: MediaSession) -> MusicInfo {
         GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing => "PLAYING".to_string(),
         GlobalSystemMediaTransportControlsSessionPlaybackStatus::Paused => "PAUSED".to_string(),
         _ => unreachable!(), // Default case should be unreachable
-    };
-
-    MusicInfo {
-        title: title.to_string(),
-        artist: artist.to_string(),
-        album_title: album_title.to_string(),
-        finished_percentage: finished_percentage.to_string(),
-        status: status_string.to_string(),
     }
 }
 
@@ -77,46 +80,43 @@ fn post_change_routine(
 }
 
 /// Goes to the previous track on the given session
-pub fn previous_track(session: MediaSession) {
+pub fn previous_track(session: GlobalSystemMediaTransportControlsSession) {
     let res = session.TrySkipPreviousAsync();
     post_change_routine(res);
 }
 
 /// Goes to the next track on the given session
-pub fn next_track(session: MediaSession) {
+pub fn next_track(session: GlobalSystemMediaTransportControlsSession) {
     let res = session.TrySkipNextAsync();
     post_change_routine(res);
 }
 
 /// Resumes playback on the given session
-pub fn play(session: MediaSession) {
+pub fn play(session: GlobalSystemMediaTransportControlsSession) {
     let res = session.TryPlayAsync();
     post_change_routine(res);
 }
 
 /// Pauses playback on the given session
-pub fn pause(session: MediaSession) {
+pub fn pause(session: GlobalSystemMediaTransportControlsSession) {
     let res = session.TryPauseAsync();
     post_change_routine(res);
 }
 
 /// Returns raw currently playing of the given session
-pub fn currently_playing_raw(session: MediaSession) -> String {
+pub fn currently_playing_raw(session: GlobalSystemMediaTransportControlsSession) -> String {
     let music_info = get_music_info(session);
     format!("{}", serde_json::to_string(&music_info).unwrap())
 }
 
 /// Get formated currently playing info (printed out in console)
-pub fn currently_playing(session: MediaSession) {
+pub fn currently_playing(session: GlobalSystemMediaTransportControlsSession) {
     let music_info = get_music_info(session);
     println!(
         "=======================================\n\
         Currently Playing: {} - {}\n\
         {}% Finished -- {}\n\
          =======================================",
-        music_info.artist,
-        music_info.title,
-        music_info.finished_percentage,
-        music_info.status
+        music_info.artist, music_info.title, music_info.finished_percentage, music_info.status
     );
 }
