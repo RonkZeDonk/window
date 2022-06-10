@@ -1,40 +1,50 @@
 //! Get's and changes the current media session's properties.
 
+use clap::{Parser, Subcommand};
+use media::{
+    currently_playing, get_current_session, next_track, pause, play, previous_track, Manager,
+};
+
 pub mod media;
+
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+#[clap(propagate_version = true)]
+struct Cli {
+    /// Options
+    #[clap(subcommand)]
+    command: Commands,
+}
+
+// #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ArgEnum)]
+#[derive(Subcommand)]
+enum Commands {
+    /// Play current track
+    Play,
+    /// Pause current track
+    Pause,
+    /// Play next track
+    Next,
+    /// Play previous track
+    Previous,
+    /// See what's currently playing
+    Current,
+    /// Watch for media changes using media manager
+    Watch,
+}
 
 #[doc(hidden)]
 fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    let current_session = match media::get_current_session() {
-        Ok(session) => session,
-        Err(err) => return println!("ERROR: {}", err),
-    };
+    let cli = Cli::parse();
 
-    if args.len() == 1 {
-        // If no args are specified just run currently playing as default
-        media::currently_playing(current_session);
-        return;
-    };
-    match args[1].as_str() {
-        "cp" => loop {
-            print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-            media::currently_playing(media::get_current_session().unwrap());
-            std::thread::sleep(std::time::Duration::from_secs(2));
-        },
-        "cp_raw" => println!("{}", media::currently_playing_raw(current_session)),
-        "pl" => media::play(current_session),
-        "pa" => media::pause(current_session),
-        "nt" => media::next_track(current_session),
-        "pt" => media::previous_track(current_session),
-        "wc" => media::Manager::new().start_sync(),
-        _ => println!(
-            "\
-            cp\tCurrently Playing\n\
-            pl\tPlay\n\
-            pa\tPause\n\
-            nt\tNext Track\n\
-            pt\tPrevious Track\n\
-        "
-        ),
-    };
+    let current_session = get_current_session().unwrap();
+
+    match &cli.command {
+        Commands::Play => play(current_session),
+        Commands::Pause => pause(current_session),
+        Commands::Next => next_track(current_session),
+        Commands::Previous => previous_track(current_session),
+        Commands::Current => currently_playing(current_session),
+        Commands::Watch => Manager::new().start_sync(),
+    }
 }
