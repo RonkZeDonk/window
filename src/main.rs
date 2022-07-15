@@ -1,4 +1,10 @@
-//! Get's and changes the current media session's properties.
+#![doc = include_str!("../README.md")]
+#![warn(
+    missing_debug_implementations,
+    rust_2018_idioms,
+    missing_docs,
+    clippy::all
+)]
 
 use clap::{Parser, Subcommand};
 use media::{
