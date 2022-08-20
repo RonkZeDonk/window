@@ -11,6 +11,7 @@ use media::{
     currently_playing, get_current_session, next_track, pause, play, previous_track, Manager,
 };
 
+/// Module that allows control of Windows media
 pub mod media;
 
 #[derive(Parser)]

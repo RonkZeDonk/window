@@ -12,6 +12,9 @@ use windows::{
     },
 };
 
+/// Messages that the MediaManager can send
+#[derive(Debug)]
+#[allow(missing_docs)]
 pub enum ManagerMessage {
     SessionChanged,
     TimelineChanged,
@@ -20,6 +23,8 @@ pub enum ManagerMessage {
     ControlC,
 }
 
+/// Media Manager.
+#[derive(Debug)]
 pub struct Manager {
     current_session: GlobalSystemMediaTransportControlsSession,
     manager: GlobalSystemMediaTransportControlsSessionManager,
@@ -28,8 +33,8 @@ pub struct Manager {
     timeline_changed: EventRegistrationToken,
     playbackinfo_changed: EventRegistrationToken,
 
-    pub tx: crossbeam_channel::Sender<ManagerMessage>,
-    pub rx: crossbeam_channel::Receiver<ManagerMessage>,
+    tx: crossbeam_channel::Sender<ManagerMessage>,
+    rx: crossbeam_channel::Receiver<ManagerMessage>,
 }
 
 #[derive(Serialize)]
@@ -85,6 +90,7 @@ struct ActiveControls {
 }
 
 impl Manager {
+    /// Create a new media manager
     pub fn new() -> Self {
         let manager =
             block_on(GlobalSystemMediaTransportControlsSessionManager::RequestAsync().unwrap())
