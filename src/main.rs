@@ -1,18 +1,7 @@
-#![doc = include_str!("../README.md")]
-#![warn(
-    missing_debug_implementations,
-    rust_2018_idioms,
-    missing_docs,
-    clippy::all
-)]
-
 use clap::{Parser, Subcommand};
-use media::{
+use driver::media::{
     currently_playing, get_current_session, next_track, pause, play, previous_track, Manager,
 };
-
-/// Module that allows control of Windows media
-pub mod media;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
