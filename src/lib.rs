@@ -8,3 +8,5 @@
 
 /// Module that allows control of Windows media
 pub mod media;
+/// Module that controls threads
+pub mod controller;

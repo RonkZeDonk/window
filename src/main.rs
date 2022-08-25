@@ -1,6 +1,10 @@
 use clap::{Parser, Subcommand};
-use window::media::{
-    currently_playing, get_current_session, next_track, pause, play, previous_track, Manager, currently_playing_raw,
+use window::{
+    controller::{Thread, ThreadController, ThreadMessage},
+    media::{
+        currently_playing, currently_playing_raw, get_current_session, next_track, pause, play,
+        previous_track, Manager,
+    },
 };
 
 #[derive(Parser)]
@@ -44,6 +48,21 @@ fn main() {
         Commands::Previous => previous_track(current_session),
         Commands::Current => currently_playing(current_session),
         Commands::CurrentJSON => println!("{}", currently_playing_raw(current_session)),
-        Commands::Watch => Manager::new().start_sync(),
+        Commands::Watch => {
+            let (tx, rx) = crossbeam_channel::unbounded();
+
+            let txc = tx.clone();
+            ctrlc::set_handler(move || {
+                txc.send(ThreadMessage::Stop).unwrap();
+            })
+            .expect("Error setting ctrlc handler");
+
+            let txc = tx.clone();
+            ThreadController::new(rx)
+                .add_thread(Thread::new(move |rx| {
+                    Manager::new(txc, rx).start_sync();
+                }))
+                .begin();
+        }
     }
 }

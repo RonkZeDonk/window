@@ -12,15 +12,16 @@ use windows::{
     },
 };
 
+use crate::controller::ThreadMessage;
+
 /// Messages that the MediaManager can send
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[allow(missing_docs)]
 pub enum ManagerMessage {
     SessionChanged,
     TimelineChanged,
     PlaybackInfoChanged,
     MediaChanged,
-    ControlC,
 }
 
 /// Media Manager.
@@ -33,8 +34,8 @@ pub struct Manager {
     timeline_changed: EventRegistrationToken,
     playbackinfo_changed: EventRegistrationToken,
 
-    tx: crossbeam_channel::Sender<ManagerMessage>,
-    rx: crossbeam_channel::Receiver<ManagerMessage>,
+    tx: crossbeam_channel::Sender<ThreadMessage>,
+    rx: crossbeam_channel::Receiver<ThreadMessage>,
 }
 
 #[derive(Serialize)]
@@ -91,21 +92,23 @@ struct ActiveControls {
 
 impl Manager {
     /// Create a new media manager
-    pub fn new() -> Self {
+    pub fn new(
+        tx: crossbeam_channel::Sender<ThreadMessage>,
+        rx: crossbeam_channel::Receiver<ThreadMessage>,
+    ) -> Self {
         let manager =
             block_on(GlobalSystemMediaTransportControlsSessionManager::RequestAsync().unwrap())
                 .unwrap();
         // TODO wait until a session is availible if there isn't one on creation
         let current_session = manager.GetCurrentSession().unwrap();
 
-        // Create a bounded channel with 5 max messages.
-        let (tx, rx) = crossbeam_channel::bounded(5);
-
         // Add event listeners
         let new_tx = tx.clone();
         let media_changed = current_session
             .MediaPropertiesChanged(TypedEventHandler::new(move |_, _| {
-                new_tx.send(ManagerMessage::MediaChanged).unwrap();
+                new_tx
+                    .send(ThreadMessage::Media(ManagerMessage::MediaChanged))
+                    .unwrap();
                 Ok(())
             }))
             .unwrap();
@@ -113,7 +116,9 @@ impl Manager {
         let new_tx = tx.clone();
         let timeline_changed = current_session
             .TimelinePropertiesChanged(TypedEventHandler::new(move |_, _| {
-                new_tx.send(ManagerMessage::TimelineChanged).unwrap();
+                new_tx
+                    .send(ThreadMessage::Media(ManagerMessage::TimelineChanged))
+                    .unwrap();
                 Ok(())
             }))
             .unwrap();
@@ -121,7 +126,9 @@ impl Manager {
         let new_tx = tx.clone();
         let playbackinfo_changed = current_session
             .PlaybackInfoChanged(TypedEventHandler::new(move |_, _| {
-                new_tx.send(ManagerMessage::PlaybackInfoChanged).unwrap();
+                new_tx
+                    .send(ThreadMessage::Media(ManagerMessage::PlaybackInfoChanged))
+                    .unwrap();
                 Ok(())
             }))
             .unwrap();
@@ -129,7 +136,9 @@ impl Manager {
         let new_tx = tx.clone();
         let session_changed = manager
             .CurrentSessionChanged(TypedEventHandler::new(move |_, _| {
-                new_tx.send(ManagerMessage::SessionChanged).unwrap();
+                new_tx
+                    .send(ThreadMessage::Media(ManagerMessage::SessionChanged))
+                    .unwrap();
                 Ok(())
             }))
             .unwrap();
@@ -151,40 +160,32 @@ impl Manager {
 
     /// Start a thread blocking event loop
     pub fn start_sync(&mut self) {
-        // TODO move ctrlc handler outside of this chunk
-        let tx = self.tx.clone();
-        ctrlc::set_handler(move || {
-            tx.send(ManagerMessage::ControlC).unwrap();
-        })
-        .expect("Error setting Ctrl-C handler");
-
         loop {
             let msg = self.rx.recv().unwrap();
 
             match msg {
-                ManagerMessage::ControlC => {
+                ThreadMessage::Stop => {
                     println!("[Media Manager] Stopping Manager...");
                     drop(self);
                     break;
                 }
-                ManagerMessage::SessionChanged => {
+                ThreadMessage::Media(ManagerMessage::SessionChanged) => {
                     println!(
                         "[Media Manager] Session changed... Attempting to update session info."
                     );
                     self.session_changed();
                 }
-                ManagerMessage::TimelineChanged => {
+                ThreadMessage::Media(ManagerMessage::TimelineChanged) => {
                     Self::timeline_changed().unwrap();
                 }
-                ManagerMessage::PlaybackInfoChanged => {
+                ThreadMessage::Media(ManagerMessage::PlaybackInfoChanged) => {
                     Self::playback_info_changed().unwrap();
                 }
-                ManagerMessage::MediaChanged => {
+                ThreadMessage::Media(ManagerMessage::MediaChanged) => {
                     Self::media_props_changed().unwrap();
                 }
+                _ => (),
             }
-
-            // TODO send msg to any other channel
         }
     }
 
@@ -210,7 +211,9 @@ impl Manager {
         let new_tx = self.tx.clone();
         let media_changed = current_session
             .MediaPropertiesChanged(TypedEventHandler::new(move |_, _| {
-                new_tx.send(ManagerMessage::MediaChanged).unwrap();
+                new_tx
+                    .send(ThreadMessage::Media(ManagerMessage::MediaChanged))
+                    .unwrap();
                 Ok(())
             }))
             .unwrap();
@@ -218,7 +221,9 @@ impl Manager {
         let new_tx = self.tx.clone();
         let timeline_changed = current_session
             .TimelinePropertiesChanged(TypedEventHandler::new(move |_, _| {
-                new_tx.send(ManagerMessage::TimelineChanged).unwrap();
+                new_tx
+                    .send(ThreadMessage::Media(ManagerMessage::TimelineChanged))
+                    .unwrap();
                 Ok(())
             }))
             .unwrap();
@@ -226,7 +231,9 @@ impl Manager {
         let new_tx = self.tx.clone();
         let playbackinfo_changed = current_session
             .PlaybackInfoChanged(TypedEventHandler::new(move |_, _| {
-                new_tx.send(ManagerMessage::PlaybackInfoChanged).unwrap();
+                new_tx
+                    .send(ThreadMessage::Media(ManagerMessage::PlaybackInfoChanged))
+                    .unwrap();
                 Ok(())
             }))
             .unwrap();
