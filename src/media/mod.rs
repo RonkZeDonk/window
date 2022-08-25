@@ -57,7 +57,9 @@ fn get_music_info(session: GlobalSystemMediaTransportControlsSession) -> MusicIn
     }
 }
 
-fn playback_status_string(status: GlobalSystemMediaTransportControlsSessionPlaybackStatus) -> String {
+fn playback_status_string(
+    status: GlobalSystemMediaTransportControlsSessionPlaybackStatus,
+) -> String {
     match status {
         GlobalSystemMediaTransportControlsSessionPlaybackStatus::Closed => "CLOSED".to_string(),
         GlobalSystemMediaTransportControlsSessionPlaybackStatus::Opened => "OPENED".to_string(),
