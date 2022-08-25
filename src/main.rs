@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
-use driver::media::{
-    currently_playing, get_current_session, next_track, pause, play, previous_track, Manager,
+use window::media::{
+    currently_playing, get_current_session, next_track, pause, play, previous_track, Manager, currently_playing_raw,
 };
 
 #[derive(Parser)]

@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
 
-const EXE_PATH = "../driver/target/release/driver.exe";
+const EXE_PATH = "../../target/release/window.exe";
 
 export function getCurrentlyPlaying(): Promise<{
   [key: string]: string;

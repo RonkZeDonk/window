@@ -8,7 +8,7 @@
       "name": "Launch Rust Project",
       "type": "cppvsdbg",
       "request": "launch",
-      "program": "${workspaceRoot}/target/debug/driver.exe",
+      "program": "${workspaceRoot}/target/debug/window.exe",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceRoot}",

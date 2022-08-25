@@ -4,7 +4,7 @@ module.exports = {
     {
       name: "@electron-forge/maker-squirrel",
       config: {
-        name: "driver"
+        name: "Window"
       }
     },
     {
