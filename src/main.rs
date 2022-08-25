@@ -25,6 +25,8 @@ enum Commands {
     Previous,
     /// See what's currently playing
     Current,
+    /// Get the currently playing data in JSON format
+    CurrentJSON,
     /// Watch for media changes using media manager
     Watch,
 }
@@ -41,6 +43,7 @@ fn main() {
         Commands::Next => next_track(current_session),
         Commands::Previous => previous_track(current_session),
         Commands::Current => currently_playing(current_session),
+        Commands::CurrentJSON => println!("{}", currently_playing_raw(current_session)),
         Commands::Watch => Manager::new().start_sync(),
     }
 }

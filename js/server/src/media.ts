@@ -5,7 +5,7 @@ const EXE_PATH = "../../target/release/window.exe";
 export function getCurrentlyPlaying(): Promise<{
   [key: string]: string;
 }> {
-  const executable = spawn(EXE_PATH, ["cp_raw"]);
+  const executable = spawn(EXE_PATH, ["current-json"]);
 
   return new Promise((resolve) => {
     executable.stdout.on("data", (data: Buffer) => {
@@ -21,16 +21,16 @@ export function doAction(action: Action) {
 
   switch (action) {
     case "play":
-      arg = "pl";
+      arg = "play";
       break;
     case "pause":
-      arg = "pa";
+      arg = "pause";
       break;
     case "next":
-      arg = "nt";
+      arg = "next";
       break;
     case "prev":
-      arg = "pt";
+      arg = "previous";
       break;
   }
 
